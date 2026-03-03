@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner Bancaire Maroc</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background: #f8fafc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .upload-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fafafa;
+        }
+
+        .upload-zone:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .upload-zone.dragover {
+            border-color: #3b82f6;
+            background: #dbeafe;
+            border-style: solid;
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-selected {
+            display: none;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 6px;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .file-selected.show {
+            display: flex;
+        }
+
+        .file-name {
+            flex: 1;
+            font-size: 0.9rem;
+            color: #166534;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .remove-file {
+            background: none;
+            border: none;
+            color: #16a34a;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.25rem;
+            line-height: 1;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            margin-top: 1.5rem;
+            padding: 0.875rem;
+            background: #1e293b;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button[type="submit"]:hover:not(:disabled) {
+            background: #334155;
+        }
+
+        button[type="submit"]:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 0.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 2rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Scanner Bancaire</h1>
+        <p class="subtitle">Classification de documents</p>
+        
+        <form action="/upload" method="post" enctype="multipart/form-data" id="uploadForm">
+            <div class="upload-zone" id="dropZone">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">Déposez votre fichier ici</div>
+                <div class="upload-hint">ou cliquez pour parcourir</div>
+                <input type="file" name="file" id="fileInput" accept="image/*,.pdf" required>
+            </div>
+            
+            <div class="file-selected" id="fileSelected">
+                <span class="file-name" id="fileName"></span>
+                <button type="button" class="remove-file" id="removeFile">✕</button>
+            </div>
+            
+            <button type="submit" id="submitBtn">Analyser</button>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div class="loading-text">Analyse en cours...</div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileSelected = document.getElementById('fileSelected');
+        const fileName = document.getElementById('fileName');
+        const removeFile = document.getElementById('removeFile');
+        const uploadForm = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                fileInput.files = files;
+                showFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                showFile(e.target.files[0]);
+            }
+        });
+
+        function showFile(file) {
+            fileName.textContent = file.name;
+            fileSelected.classList.add('show');
+            dropZone.style.display = 'none';
+        }
+
+        removeFile.addEventListener('click', () => {
+            fileInput.value = '';
+            fileSelected.classList.remove('show');
+            dropZone.style.display = 'block';
+        });
+
+        uploadForm.addEventListener('submit', () => {
+            submitBtn.disabled = true;
+            loading.classList.add('show');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur Chèque CIH Bank</title>
+    <style>
+        @page {
+            size: 210mm 99mm;
+            margin: 0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #f5f5f5;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 900px;
+        }
+        
+        .controls h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        button {
+            background: #0078d4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #005a9e;
+        }
+        
+        button.secondary {
+            background: #6c757d;
+        }
+        
+        .check-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        /* Le chèque */
+        .check {
+            width: 210mm;
+            height: 99mm;
+            background: #fafafa;
+            position: relative;
+            border: 1px solid #999;
+            overflow: hidden;
+            font-size: 11px;
+            color: #1a1a1a;
+        }
+        
+        /* Bruit subtil */
+        .noise-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            opacity: 0.4;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8mm 12mm 0 12mm;
+        }
+        
+        .bank-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .bank-name {
+            font-size: 22px;
+            font-weight: 900;
+            color: #1a1a1a;
+            letter-spacing: 2px;
+        }
+        
+        .bank-arrow {
+            width: 0;
+            height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-left: 15px solid #c41e3a;
+        }
+        
+        .amount-corner {
+            font-family: 'Brush Script MT', 'Segoe Script', cursive;
+            font-size: 28px;
+            color: #333;
+            transform: rotate(-5deg);
+            border: 2px solid #333;
+            padding: 5px 15px;
+            background: white;
+        }
+        
+        /* Ligne de titre */
+        .title-line {
+            text-align: center;
+            font-size: 9px;
+            color: #666;
+            margin: 3mm 0;
+            letter-spacing: 1px;
+        }
+        
+        /* Section montant */
+        .amount-section {
+            padding: 0 12mm;
+            margin-top: 4mm;
+        }
+        
+        .amount-label {
+            font-size: 9px;
+            color: #555;
+            text-transform: uppercase;
+            margin-bottom: 2mm;
+        }
+        
+        .amount-handwritten {
+            font-family: 'Brush Script MT', 'Segoe Script', cursive;
+            font-size: 26px;
+            color: #222;
+            border-bottom: 1px solid #666;
+            padding-bottom: 3px;
+            display: inline-block;
+            min-width: 140mm;
+            transform: rotate(-1deg);
+        }
+        
+        .amount-numeric {
+            font-family: 'Courier New', monospace;
+            font-size: 20px;
+            font-weight: bold;
+            border: 2px solid #333;
+            padding: 3px 10px;
+            display: inline-block;
+            margin-left: 5mm;
+            background: white;
+        }
+        
+        /* Section bénéficiaire */
+        .payee-section {
+            padding: 0 12mm;
+            margin-top: 6mm;
+            display: flex;
+            align-items: baseline;
+            gap: 5mm;
+        }
+        
+        .payee-label {
+            font-size: 9px;
+            color: #555;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        
+        .payee-handwritten {
+            font-family: 'Brush Script MT', 'Segoe Script', cursive;
+            font-size: 22px;
+            color: #222;
+            border-bottom: 1px solid #666;
+            flex: 1;
+            padding-bottom: 2px;
+            transform: rotate(0.5deg);
+        }
+        
+        /* Section lieu et date */
+        .location-date {
+            display: flex;
+            justify-content: flex-end;
+            padding: 0 12mm;
+            margin-top: 5mm;
+            gap: 15mm;
+            align-items: baseline;
+        }
+        
+        .location-box, .date-box {
+            display: flex;
+            align-items: baseline;
+            gap: 3mm;
+        }
+        
+        .box-label {
+            font-size: 9px;
+            color: #555;
+        }
+        
+        .box-handwritten {
+            font-family: 'Brush Script MT', 'Segoe Script', cursive;
+            font-size: 18px;
+            color: #222;
+            border-bottom: 1px solid #666;
+            min-width: 25mm;
+            text-align: center;
+            padding: 0 5px;
+        }
+        
+        /* Section compte */
+        .account-section {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 12mm;
+            margin-top: 6mm;
+        }
+        
+        .account-info {
+            font-size: 10px;
+            line-height: 1.4;
+        }
+        
+        .account-info strong {
+            font-size: 11px;
+        }
+        
+        .account-number {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        
+        .account-holder {
+            font-size: 10px;
+            margin-top: 2mm;
+        }
+        
+        /* Signature */
+        .signature-section {
+            text-align: right;
+            padding: 0 12mm;
+            margin-top: 3mm;
+        }
+        
+        .signature-line {
+            font-size: 8px;
+            color: #666;
+            margin-bottom: 2mm;
+        }
+        
+        .signature-handwritten {
+            font-family: 'Brush Script MT', 'Segoe Script', cursive;
+            font-size: 32px;
+            color: #1a1a1a;
+            transform: rotate(-3deg);
+            display: inline-block;
+            margin-right: 10mm;
+        }
+        
+        /* Code barre */
+        .barcode-section {
+            position: absolute;
+            bottom: 8mm;
+            left: 12mm;
+            right: 12mm;
+        }
+        
+        .barcode-line {
+            height: 8mm;
+            background: repeating-linear-gradient(
+                90deg,
+                #000 0px,
+                #000 2px,
+                #fff 2px,
+                #fff 4px,
+                #000 4px,
+                #000 5px,
+                #fff 5px,
+                #fff 8px
+            );
+            margin-bottom: 2mm;
+        }
+        
+        .barcode-numbers {
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+        
+        /* Footer */
+        .footer-text {
+            position: absolute;
+            bottom: 2mm;
+            left: 12mm;
+            right: 12mm;
+            font-size: 7px;
+            color: #888;
+            text-align: center;
+        }
+        
+        /* Grayscale filter pour l'export */
+        .grayscale {
+            filter: grayscale(100%) contrast(1.1);
+        }
+        
+        /* Variations de bruit */
+        .noise-light {
+            opacity: 0.3;
+        }
+        
+        .noise-medium {
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h2>Paramètres du Chèque CIH Bank</h2>
+        <div class="input-group">
+            <div>
+                <label>Montant (lettres)</label>
+                <input type="text" id="amountWords" value="DOUZE MILLE DIRHAMS" placeholder="Douze mille dirhams">
+            </div>
+            <div>
+                <label>Montant (chiffres)</label>
+                <input type="text" id="amountNum" value="12 000,00" placeholder="12 000,00">
+            </div>
+            <div>
+                <label>Bénéficiaire</label>
+                <input type="text" id="payee" value="M. BOUHADDOUZ RACHID" placeholder="Nom du bénéficiaire">
+            </div>
+            <div>
+                <label>Lieu</label>
+                <input type="text" id="location" value="NADOR" placeholder="Ville">
+            </div>
+            <div>
+                <label>Date</label>
+                <input type="text" id="date" value="17/11/2024" placeholder="JJ/MM/AAAA">
+            </div>
+            <div>
+                <label>Numéro compte</label>
+                <input type="text" id="accountNum" value="2480175 2110 088 00" placeholder="Numéro de compte">
+            </div>
+            <div>
+                <label>Titulaire</label>
+                <input type="text" id="accountHolder" value="M. BOUHADDOUZ RACHID" placeholder="Nom du titulaire">
+            </div>
+            <div>
+                <label>Signature</label>
+                <input type="text" id="signature" value="Rachid" placeholder="Signature">
+            </div>
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Niveau de bruit :</label>
+            <label style="margin-right: 15px;"><input type="radio" name="noise" value="none" checked> Aucun</label>
+            <label style="margin-right: 15px;"><input type="radio" name="noise" value="light"> Léger</label>
+            <label><input type="radio" name="noise" value="medium"> Moyen</label>
+        </div>
+        <button onclick="updateCheck()">Générer le chèque</button>
+        <button onclick="randomizeCheck()" class="secondary">Aléatoire</button>
+        <button onclick="downloadCheck()" class="secondary">Télécharger PNG</button>
+    </div>
+
+    <div class="check-container" id="checkContainer">
+        <div class="check grayscale" id="check">
+            <div class="noise-overlay" id="noiseOverlay"></div>
+            
+            <!-- Header -->
+            <div class="header">
+                <div class="bank-logo">
+                    <span class="bank-name">CIH</span>
+                    <div class="bank-arrow"></div>
+                    <span class="bank-name">BANK</span>
+                </div>
+                <div class="amount-corner" id="displayAmountCorner">120000</div>
+            </div>
+            
+            <!-- Titre -->
+            <div class="title-line">PAYEZ CONTRE CE CHÈQUE</div>
+            
+            <!-- Montant -->
+            <div class="amount-section">
+                <div class="amount-label">SOMME EN TOUTES LETTRES</div>
+                <div style="display: flex; align-items: baseline; gap: 10px;">
+                    <span class="amount-handwritten" id="displayAmountWords">DOUZE MILLE DIRHAMS</span>
+                    <span class="amount-numeric" id="displayAmountNum">12 000,00</span>
+                </div>
+            </div>
+            
+            <!-- Bénéficiaire -->
+            <div class="payee-section">
+                <span class="payee-label">À L'ORDRE DE</span>
+                <span class="payee-handwritten" id="displayPayee">M. BOUHADDOUZ RACHID</span>
+            </div>
+            
+            <!-- Lieu et date -->
+            <div class="location-date">
+                <div class="location-box">
+                    <span class="box-label">PAYABLE À</span>
+                    <span class="box-handwritten" id="displayLocation">NADOR</span>
+                </div>
+                <div class="date-box">
+                    <span class="box-label">LE</span>
+                    <span class="box-handwritten" id="displayDate">17/11/2024</span>
+                </div>
+            </div>
+            
+            <!-- Section compte et info -->
+            <div class="account-section">
+                <div class="account-info">
+                    <strong>NADOR GRAND MAGHREB</strong><br>
+                    ANG AVENUE ANNAKHIL<br>
+                    ET RUE TAOUIMA<br>
+                    NADOR<br>
+                    05 36 33 01 48/73
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 9px; color: #555; margin-bottom: 2px;">COMPTE رقم الحساب</div>
+                    <div class="account-number" id="displayAccountNum">2480175 2110 088 00</div>
+                    <div class="account-holder" id="displayAccountHolder">M. BOUHADDOUZ RACHID</div>
+                </div>
+            </div>
+            
+            <!-- Signature -->
+            <div class="signature-section">
+                <div class="signature-line">LA SIGNATURE NE DOIT PAS DÉPASSER LA ZONE CI-DESSOUS</div>
+                <div class="signature-handwritten" id="displaySignature">Rachid</div>
+            </div>
+            
+            <!-- Code barre -->
+            <div class="barcode-section">
+                <div class="barcode-line"></div>
+                <div class="barcode-numbers">00 9972384 230500 2460175 2110 088 00 78</div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="footer-text">
+                TBB 9972384 | Chèque | صك | LA SIGNATURE NE DOIT PAS DÉPASSER LA ZONE CI-DESSOUS | يجب ألا يتعدى التوقيع إلى الخير المؤمنة لسحب
+            </div>
+        </div>
+    </div>
+
+    <!-- Canvas caché pour l'export -->
+    <canvas id="exportCanvas" style="display: none;"></canvas>
+
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script>
+        function updateCheck() {
+            document.getElementById('displayAmountWords').textContent = document.getElementById('amountWords').value;
+            document.getElementById('displayAmountNum').textContent = document.getElementById('amountNum').value;
+            document.getElementById('displayAmountCorner').textContent = document.getElementById('amountNum').value.replace(/[^0-9]/g, '');
+            document.getElementById('displayPayee').textContent = document.getElementById('payee').value;
+            document.getElementById('displayLocation').textContent = document.getElementById('location').value;
+            document.getElementById('displayDate').textContent = document.getElementById('date').value;
+            document.getElementById('displayAccountNum').textContent = document.getElementById('accountNum').value;
+            document.getElementById('displayAccountHolder').textContent = document.getElementById('accountHolder').value;
+            document.getElementById('displaySignature').textContent = document.getElementById('signature').value;
+            
+            // Appliquer le bruit
+            const noiseLevel = document.querySelector('input[name="noise"]:checked').value;
+            const overlay = document.getElementById('noiseOverlay');
+            overlay.className = 'noise-overlay';
+            if (noiseLevel === 'light') {
+                overlay.classList.add('noise-light');
+            } else if (noiseLevel === 'medium') {
+                overlay.classList.add('noise-medium');
+            }
+        }
+        
+        function randomizeCheck() {
+            const noms = ['M. BOUHADDOUZ RACHID', 'M. ALAMI MOHAMED', 'MME. BENALI FATIMA', 'M. EL FASSI KARIM', 'SARL MAGHREB TRADE'];
+            const villes = ['NADOR', 'CASABLANCA', 'RABAT', 'FES', 'TANGER', 'MARRAKECH'];
+            const montants = [
+                {lettres: 'CINQ MILLE DIRHAMS', chiffres: '5 000,00'},
+                {lettres: 'DOUZE MILLE DIRHAMS', chiffres: '12 000,00'},
+                {lettres: 'VINGT MILLE DIRHAMS', chiffres: '20 000,00'},
+                {lettres: 'TRENTE CINQ MILLE DIRHAMS', chiffres: '35 000,00'}
+            ];
+            const signatures = ['Rachid', 'Mohamed', 'Karim', 'Fatima', 'Ahmed'];
+            
+            const montant = montants[Math.floor(Math.random() * montants.length)];
+            const nom = noms[Math.floor(Math.random() * noms.length)];
+            
+            document.getElementById('amountWords').value = montant.lettres;
+            document.getElementById('amountNum').value = montant.chiffres;
+            document.getElementById('payee').value = nom;
+            document.getElementById('accountHolder').value = nom;
+            document.getElementById('location').value = villes[Math.floor(Math.random() * villes.length)];
+            document.getElementById('date').value = `${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}/${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}/2024`;
+            document.getElementById('signature').value = signatures[Math.floor(Math.random() * signatures.length)];
+            
+            updateCheck();
+        }
+        
+        function downloadCheck() {
+            const check = document.getElementById('check');
+            html2canvas(check, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#fafafa'
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'cheque_cih_' + Date.now() + '.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+        
+        // Initialisation
+        updateCheck();
+    </script>
+</body>
+</html>
