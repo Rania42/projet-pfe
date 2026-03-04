@@ -1,72 +1,38 @@
-** OCR Document Classifier
-Ce projet permet de classifier automatiquement des documents (facture, RIB, chèque, etc.) à partir d’une image.
-Le système repose sur une combinaison de :
--OCR (extraction de texte depuis l’image)
--Règles intelligentes (mots-clés pondérés + fuzzy matching)
-👉 Cette version est une première implémentation (V1) visant à valider l’approche et tester les performances.
+📄 OCR Document Classifier (V1)
+Ce projet propose une solution automatisée pour classifier des documents (factures, RIB, chèques, etc.) à partir d'images. Il combine l'extraction de texte et une analyse par scoring pour identifier le type de document avec précision.
 
-** Comment lancer le projet ?
-Pour tester l'application, ouvrez votre terminal et suivez ces étapes :
+✨ Points Forts
+Traitement Hybride : Allie l'OCR bilingue (Français/Arabe) à une logique de pondération par mots-clés.
 
-Accédez au dossier du projet :
+Robustesse : Utilise le Fuzzy Matching pour rester efficace malgré d'éventuelles erreurs de lecture OCR.
+
+Confidentialité : Conçu pour garantir la sécurité et la protection des données traitées.
+
+⚙️ Fonctionnement du Pipeline
+Le système suit un flux de travail en quatre étapes clés :
+
+Prétraitement : Amélioration de l'image (contraste, binarisation) pour une lecture optimale.
+
+Extraction OCR : Conversion de l'image en texte brut via Pytesseract.
+
+Normalisation : Nettoyage du texte (minuscules, suppression des accents).
+
+Classification : Calcul d'un score final basé sur un dictionnaire de mots-clés et la similarité textuelle.
+
+📂 Organisation du Projet
+Le projet est structuré dans le dossier suivant :
+
 cd mon_projet_ocr
 
-Installez les dépendances :
-pip install -r requirement.txt
+Il s'articule autour des fichiers principaux :
 
-Lancez l'application :
-python app.py
+app.py : Interface web Flask.
 
-Ouvrez votre navigateur à l'adresse : http://127.0.0.1:5000
+classifier.py : Cœur algorithmique de traitement et de classification.
 
-** Comment ça marche ? (Le Workflow)
-Le système repose sur un pipeline de traitement en 4 étapes clés :
+dictionary.py : Base de connaissances des mots-clés.
 
-1. Prétraitement de l'image
-Avant l'analyse, l'image est nettoyée pour maximiser la précision de la lecture :
+🔮 Évolutions Futures
+Intelligence Sémantique : Intégration de LLM locaux (Ollama).
 
-Contraste (CLAHE) : Pour faire ressortir les caractères.
-
-Réduction du bruit : Utilisation d'un filtre bilatéral pour lisser l'image sans flouter les bords des lettres.
-
-Binarisation : Transformation en noir et blanc pur (Adaptive Threshold).
-
-2. Extraction OCR
-Utilisation de Pytesseract configuré pour une reconnaissance bilingue (Français + Arabe). L'image devient alors un bloc de texte brut exploitable.
-
-3. Nettoyage & Normalisation
-Pour éviter les erreurs de frappe ou de lecture, le texte est "normalisé" :
-
-Passage en minuscules.
-
-Suppression des accents.
-
-Nettoyage des caractères spéciaux tout en préservant l'arabe et le latin.
-
-4. Classification par Scoring (Le Cœur du Système)
-L'application compare le texte extrait avec un dictionnaire de mots-clés pondérés (chaque mot a un "poids" ou une importance) :
-
-Matching Exact : Recherche de mots précis.
-
-Fuzzy Matching (RapidFuzz) : Reconnaissance des mots même s'il manque une lettre ou s'il y a une petite erreur de lecture OCR.
-
-Score Final : Le type de document qui obtient le score le plus élevé est retenu.
-
-** Structure du Projet
-app.py : Le serveur Flask (interface web).
-
-classifier.py : Logique de traitement d'image et de calcul de score.
-
-dictionary.py : Base de connaissances contenant les mots-clés par type de document.
-
-uploads/ : Stockage temporaire des fichiers analysés.
-
-** Perspectives d'évolution
-Pour franchir un palier supplémentaire en termes de performance et de polyvalence, les prochaines étapes incluent :
-
-->Intelligence Sémantique (LLM Local) : Intégration d'Ollama pour combiner le système de scoring actuel avec une compréhension contextuelle profonde. Cela permettra de lever les ambiguïtés sur des documents très similaires.
-
-->Optimisation pour Documents Volumineux : Mise en place d'une stratégie d'extraction rapide pour les fichiers complexes (PDF multi-pages, Word, Excel). L'idée est de cibler prioritairement les en-têtes, les titres principaux ou les métadonnées clés pour classifier le document instantanément sans avoir à analyser l'intégralité des pages.
-
-->Fusion Multimodale : Combiner l'analyse de la mise en page (layout) et l'analyse textuelle pour atteindre une précision maximale, même sur des documents administratifs denses.
-Développé avec passion pour simplifier la gestion documentaire. 💡
+Analyse de mise en page : Fusion multimodale (texte + layout) pour les documents complexes.
